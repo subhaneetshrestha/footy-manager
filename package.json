@@ -1,0 +1,10 @@
+{
+  "name": "footy-manager",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "build:seed": "pnpm --filter @footy/data build:seed"
+  }
+}

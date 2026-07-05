@@ -1,0 +1,147 @@
+/**
+ * Career session state: holds the live WorldState and drives it exclusively
+ * through engine functions — no simulation logic in the UI layer (§2).
+ * World mutations are deterministic (engine PRNG streams); the store bumps
+ * the world reference so React re-renders.
+ */
+
+import { create } from 'zustand';
+import { buildWorldForLeague } from '@footy/data';
+import {
+  clubOf,
+  endOfSeasonVerdict,
+  executeTransfer,
+  isSeasonOver,
+  playMatchday,
+  rolloverSeason,
+  transferWindowFor,
+  type BoardVerdict,
+  type Fixture,
+  type FormationKey,
+  type WorldState,
+} from '@footy/engine';
+import type { PlayStyle } from '@footy/shared';
+
+interface CareerState {
+  world: WorldState | null;
+  /** True while the world is being generated. */
+  building: boolean;
+  /** True while a long sim (rest of season) runs. */
+  advancing: boolean;
+  lastUserFixture: Fixture | null;
+  verdict: BoardVerdict | null;
+  error: string | null;
+
+  startCareer(leagueKey: string, clubKey: string): void;
+  playNext(): void;
+  simToSeasonEnd(): void;
+  setTactics(formation: FormationKey, style: PlayStyle): void;
+  buyPlayer(playerId: number): void;
+  startNextSeason(): void;
+  reset(): void;
+}
+
+/** New top-level reference so zustand subscribers re-render after mutation. */
+function refresh(world: WorldState): WorldState {
+  return { ...world };
+}
+
+function userFixtureOf(played: Fixture[], userClubId: number): Fixture | null {
+  return (
+    played.find((f) => f.homeClubId === userClubId || f.awayClubId === userClubId) ?? null
+  );
+}
+
+export const useCareerStore = create<CareerState>((set, get) => ({
+  world: null,
+  building: false,
+  advancing: false,
+  lastUserFixture: null,
+  verdict: null,
+  error: null,
+
+  startCareer(leagueKey, clubKey) {
+    set({ building: true, world: null, verdict: null, lastUserFixture: null, error: null });
+    // Defer one tick so the loading state paints before the sync build.
+    setTimeout(() => {
+      try {
+        const world = buildWorldForLeague({ leagueKey, userClubKey: clubKey });
+        set({ world, building: false });
+      } catch (e) {
+        set({ error: e instanceof Error ? e.message : String(e), building: false });
+      }
+    }, 50);
+  },
+
+  playNext() {
+    const { world } = get();
+    if (!world || isSeasonOver(world)) return;
+    const played = playMatchday(world);
+    set({
+      world: refresh(world),
+      lastUserFixture: userFixtureOf(played, world.userClubId),
+      verdict: isSeasonOver(world) ? endOfSeasonVerdict(world, world.userClubId) : null,
+      error: null,
+    });
+  },
+
+  simToSeasonEnd() {
+    const { world } = get();
+    if (!world || isSeasonOver(world)) return;
+    set({ advancing: true });
+    setTimeout(() => {
+      let last: Fixture | null = null;
+      while (!isSeasonOver(world)) {
+        const played = playMatchday(world);
+        last = userFixtureOf(played, world.userClubId) ?? last;
+      }
+      set({
+        world: refresh(world),
+        advancing: false,
+        lastUserFixture: last,
+        verdict: endOfSeasonVerdict(world, world.userClubId),
+        error: null,
+      });
+    }, 50);
+  },
+
+  setTactics(formation, style) {
+    const { world } = get();
+    if (!world) return;
+    clubOf(world, world.userClubId).tactics = { formation, playStyle: style };
+    set({ world: refresh(world) });
+  },
+
+  buyPlayer(playerId) {
+    const { world } = get();
+    if (!world) return;
+    if (transferWindowFor(world.currentMatchday, world.totalMatchdays) === null) {
+      set({ error: 'The transfer window is closed.' });
+      return;
+    }
+    try {
+      executeTransfer(world, playerId, world.userClubId, world.currentMatchday);
+      set({ world: refresh(world), error: null });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
+  startNextSeason() {
+    const { world } = get();
+    if (!world) return;
+    rolloverSeason(world);
+    set({ world: refresh(world), verdict: null, lastUserFixture: null, error: null });
+  },
+
+  reset() {
+    set({
+      world: null,
+      building: false,
+      advancing: false,
+      lastUserFixture: null,
+      verdict: null,
+      error: null,
+    });
+  },
+}));
