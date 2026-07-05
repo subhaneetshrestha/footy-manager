@@ -134,8 +134,10 @@ export function processLoansAtRollover(world: WorldState): void {
     if (wantsToBuy && fee !== null) {
       buyer.budgetTransfer = Math.max(0, buyer.budgetTransfer - fee);
       buyer.balance -= fee;
+      buyer.seasonTransferSpend = (buyer.seasonTransferSpend ?? 0) + fee;
       seller.balance += fee;
       seller.budgetTransfer += Math.round(fee * 0.5);
+      seller.seasonTransferIncome = (seller.seasonTransferIncome ?? 0) + fee;
       world.transfers.push({
         playerId: loan.playerId,
         fromClubId: seller.id,

@@ -9,9 +9,12 @@ import { create } from 'zustand';
 import { buildWorldForLeague, makeYouthIntakeGenerator } from '@footy/data';
 import {
   STANDARD_LOAN_TERMS,
+  acceptJob,
+  applyVerdictToManagerReputation,
   autoFillStaff,
   clubOf,
   endOfSeasonVerdict,
+  jobOffersFor,
   executeLoan,
   executeTransfer,
   findLoanTaker,
@@ -27,6 +30,7 @@ import {
   type DetailedMatch,
   type Fixture,
   type FormationKey,
+  type WorldClub,
   type WorldPlayer,
   type WorldState,
 } from '@footy/engine';
@@ -44,6 +48,8 @@ interface CareerState {
   /** This season's academy intake at the user's club (news card). */
   lastIntake: WorldPlayer[] | null;
   verdict: BoardVerdict | null;
+  /** Clubs offering you a job after a sacking (§8 manager market). */
+  jobOffers: WorldClub[] | null;
   error: string | null;
 
   startCareer(leagueKey: string, clubKey: string): void;
@@ -56,9 +62,20 @@ interface CareerState {
   autoFillStaffRoles(): void;
   renewPlayerContract(playerId: number): void;
   loanOutPlayer(playerId: number): void;
+  acceptJobOffer(clubId: number): void;
   startNextSeason(): void;
   dismissMatch(): void;
   reset(): void;
+}
+
+function verdictUpdate(world: WorldState): Pick<CareerState, 'verdict' | 'jobOffers'> {
+  if (!isSeasonOver(world)) return { verdict: null, jobOffers: null };
+  const verdict = endOfSeasonVerdict(world, world.userClubId);
+  applyVerdictToManagerReputation(world, verdict);
+  return {
+    verdict,
+    jobOffers: verdict.verdict === 'sacked' ? jobOffersFor(world) : null,
+  };
 }
 
 /** New top-level reference so zustand subscribers re-render after mutation. */
@@ -80,6 +97,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
   liveMatch: null,
   lastIntake: null,
   verdict: null,
+  jobOffers: null,
   error: null,
 
   startCareer(leagueKey, clubKey) {
@@ -107,7 +125,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
       lastUserFixture: userFixtureOf(played, world.userClubId),
       liveMatch: detail,
       lastIntake: null, // season under way — intake news expires
-      verdict: isSeasonOver(world) ? endOfSeasonVerdict(world, world.userClubId) : null,
+      ...verdictUpdate(world),
       error: null,
     });
   },
@@ -126,7 +144,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
         world: refresh(world),
         advancing: false,
         lastUserFixture: last,
-        verdict: endOfSeasonVerdict(world, world.userClubId),
+        ...verdictUpdate(world),
         error: null,
       });
     }, 50);
@@ -218,6 +236,25 @@ export const useCareerStore = create<CareerState>((set, get) => ({
     }
   },
 
+  acceptJobOffer(clubId) {
+    const { world } = get();
+    if (!world) return;
+    try {
+      acceptJob(world, clubId);
+      const summary = rolloverSeason(world, { youthIntake: makeYouthIntakeGenerator() });
+      set({
+        world: refresh(world),
+        verdict: null,
+        jobOffers: null,
+        lastUserFixture: null,
+        lastIntake: summary.userIntake,
+        error: null,
+      });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
   startNextSeason() {
     const { world } = get();
     if (!world) return;
@@ -225,6 +262,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
     set({
       world: refresh(world),
       verdict: null,
+      jobOffers: null,
       lastUserFixture: null,
       lastIntake: summary.userIntake,
       error: null,
@@ -244,6 +282,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
       liveMatch: null,
       lastIntake: null,
       verdict: null,
+      jobOffers: null,
       error: null,
     });
   },

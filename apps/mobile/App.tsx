@@ -13,6 +13,7 @@ import { CareerScreen } from './src/screens/CareerScreen';
 import { SquadScreen } from './src/screens/SquadScreen';
 import { StaffScreen } from './src/screens/StaffScreen';
 import { MatchScreen } from './src/screens/MatchScreen';
+import { FinancesScreen } from './src/screens/FinancesScreen';
 import { TacticsScreen } from './src/screens/TacticsScreen';
 import { TableScreen } from './src/screens/TableScreen';
 import { TransfersScreen } from './src/screens/TransfersScreen';
@@ -112,6 +113,8 @@ function Router() {
         <StaffScreen />
       ) : screen === 'match' ? (
         <MatchScreen />
+      ) : screen === 'finances' ? (
+        <FinancesScreen />
       ) : (
         <MainMenu />
       )}

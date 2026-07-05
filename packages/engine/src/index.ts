@@ -4,6 +4,8 @@ export * from './match/tierA';
 export * from './match/commentary';
 export * from './finance/valuation';
 export * from './finance/budgets';
+export * from './finance/economy';
+export * from './board/jobs';
 export * from './world/types';
 export * from './world/formations';
 export * from './season/calendar';

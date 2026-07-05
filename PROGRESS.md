@@ -22,11 +22,11 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 | 3 — Injuries/loans/contracts | ✅ done | Gate proven: believable injury volume (exposure model, Fuller tiers, physio effects), loan clauses + AI loans, contract lifecycle + free agency. |
 | 4 — Tier-A 2D match engine | ✅ core done | `match/tierA.ts`: pre-generated deterministic event timeline (pass/carry/shot/goal/save/cards, x/y, xG, XI actors), parity with Tier B BY CONSTRUCTION (same `expectedGoalRates`; shot rate = λ/(90·meanXG·CQM)) + standing statistical parity test (±0.14 over 800 sims × 3 configs). `match/commentary.ts` deterministic templates. User fixture resolved by Tier A inside `playMatchday(world, onUserMatch?)`. App `MatchScreen`: RN-View pitch playback, score/clock, commentary ticker, live stats, pause/speed/skip. Remaining for gate: Skia renderer + 60fps check on device (D8); zone-based possession model is cosmetic-first (chance timing calibrated, not spatially emergent). |
 | 5 — Youth/regens | ✅ done | Gate proven: 5-season endurance test (squads stay [18-34], active population ≥85%, plausible prospects keep arriving). `engine/youth/academy.ts` owns retirements (retired flag, GK grace year), append-only intake application, squad pruning; `data/generate/youth.ts` provides the intake generator (facilities 50% + youth coach 30% + reputation 20%); youth coach boosts U18 growth; hub shows the intake news card. Tutoring/promotion UI deferred (academy merges into senior squad as prospects). |
-| 6 — Deep finance/FFP | ▶ next | |
+| 6 — Deep finance/FFP | ✅ core done | Gate proven: 10-season economic stability test (finite sane balances, bounded wealth growth, budgets in band, embargos rare, squads populated). `finance/economy.ts`: season books (gate/TV equal+merit/sponsor/prize vs wages/staff/transfers/operating-70%), P&L → balance → budget re-derivation, FFP strikes → embargo (fee transfers only, D10). Transfer depth: installments (half now/half next season), 5% agent fees, 15% sell-on clauses that chain across moves. `board/jobs.ts`: manager reputation moves with verdicts; sacked → job offers → career continues at a new club. FinancesScreen + offer UI. Deferred: real-data importer + TheSportsDB (D9), deeper balancing after device milestone. |
 
 ## Verification state
 
-- `pnpm -r test` → 164 tests green (shared 25, engine 86, data 40, mobile 13).
+- `pnpm -r test` → 170 tests green (shared 25, engine 91, data 41, mobile 13).
 - `pnpm -r typecheck` → 4/4 clean.
 - CI (`.github/workflows/ci.yml`): determinism matrix (ubuntu/windows/macos,
   golden battery must match `packages/engine/test/golden.json` byte-for-byte),
@@ -74,14 +74,24 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 
 ## Next session should
 
-1. Phase 6 (PLAN §15): full revenue/expense books (gate/TV/sponsor/prize
-   through finance_ledger semantics), FFP-style constraint, installments/
-   agents/sell-on clauses, manager job market, global balancing pass.
-2. Or the device milestone (firewall rule → Expo Go → save/Continue
-   verification, threading spike D2, Skia renderer + 60fps gate D8).
+All 7 roadmap phases have their core delivered. Remaining work, in rough
+priority order:
+1. **Device milestone**: firewall rule → Expo Go → verify save/Continue on
+   real SQLite (Phase-1 gate item), threading spike (D2), Skia renderer +
+   60fps gate (D8). This is the biggest unlock.
+2. Save-system integration: persist WorldState progress into save_<n>.db via
+   the DAL (schema exists; currently web preview is in-memory only).
+3. Background leagues + global transfer market (lift D6), domestic cups.
+4. Calibration pass (D3), real-data pack importer + TheSportsDB opt-in (D9),
+   global balancing/fun pass across a 10+ season career.
 
 ## Session log
 
+- **2026-07-05 (evening)**: Phase 6 core: season books/FFP/budget derivation,
+  installments/agent fees/sell-ons, manager job market (sacked → offers →
+  career continues), FinancesScreen. 10-season stability gate green; it
+  caught embargoed clubs starving → D10 (frees exempt from embargo).
+  170 tests.
 - **2026-07-05 (later still)**: Phase 5: academy/retirements/intakes/pruning +
   youth generator + intake card; 5-season endurance gate green. Endurance
   test exposed a latent Phase-3 bug (trainingInjuryPass crashed on free

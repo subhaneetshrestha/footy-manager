@@ -89,6 +89,22 @@ export interface WorldStaff {
   wage: number;
 }
 
+/** One season's income/expense books (§8 deep finances, Phase 6). */
+export interface SeasonBooks {
+  season: number;
+  finalPosition: number;
+  revenueGate: number;
+  revenueTv: number;
+  revenueSponsor: number;
+  revenuePrize: number;
+  revenueTransfers: number;
+  expenseWages: number;
+  expenseStaffWages: number;
+  expenseTransfers: number;
+  expenseOperating: number;
+  net: number;
+}
+
 export interface WorldClub {
   id: number;
   leagueId: number;
@@ -100,6 +116,13 @@ export interface WorldClub {
   balance: number;
   budgetTransfer: number;
   budgetWage: number;
+  /** Optional Phase-6 economy state (defaults applied by the economy module). */
+  stadiumCapacity?: number;
+  books?: SeasonBooks;
+  ffpStrikes?: number;
+  transferEmbargo?: boolean;
+  seasonTransferSpend?: number;
+  seasonTransferIncome?: number;
   /** Weekly staff wage budget (§8: smaller clubs afford fewer/worse coaches). */
   budgetStaffWage: number;
   /** 1-20 (contract §3.8). */
@@ -117,6 +140,9 @@ export interface WorldLeague {
   nation: string;
   reputation: number;
   relegationSlots: number;
+  /** Season TV/prize pools, EUR (Phase-6 economy; defaults when absent). */
+  tvPoolBase?: number;
+  prizePoolBase?: number;
   clubIds: number[];
 }
 
@@ -141,9 +167,27 @@ export interface TransferRecord {
   matchday: number;
 }
 
+/** Half-now/half-later transfer fee instalment due at a future season. */
+export interface DeferredPayment {
+  clubId: number;
+  amount: number;
+  dueSeason: number;
+}
+
+/** Previous seller keeps a slice of the NEXT fee (§8 sell-on clauses). */
+export interface SellOnClause {
+  playerId: number;
+  beneficiaryClubId: number;
+  pct: number;
+}
+
 export interface WorldState {
   /** Master seed; all match/transfer streams derive from it (contract §3.9). */
   seed: number;
+  /** The user's managerial reputation (0-100); moves with board verdicts. */
+  managerReputation?: number;
+  deferredPayments?: DeferredPayment[];
+  sellOnClauses?: SellOnClause[];
   /** 2026 means season 2026/27. */
   season: number;
   /** Next matchday to play (1-based). > totalMatchdays ⇒ season finished. */

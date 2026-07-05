@@ -7,6 +7,7 @@
  */
 
 import { clamp, createRng, deriveSeed } from '@footy/shared';
+import { computeSeasonBooks } from '../finance/economy';
 import { playerValue } from '../finance/valuation';
 import { generateLeagueFixtures } from './calendar';
 import { processContractsAtRollover } from '../transfers/contracts';
@@ -30,6 +31,7 @@ export function rolloverSeason(
   options: RolloverOptions = {},
 ): RolloverSummary {
   processLoansAtRollover(world); // returns/options first — parents get players back
+  computeSeasonBooks(world); // books off the final table, budgets re-derived (§8)
   processContractsAtRollover(world); // then contracts tick, renew or release
 
   for (const player of world.players) {

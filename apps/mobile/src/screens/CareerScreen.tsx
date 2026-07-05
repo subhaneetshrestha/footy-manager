@@ -36,8 +36,9 @@ export function CareerScreen() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigate = useAppStore((s) => s.navigate);
-  const { world, building, advancing, lastUserFixture, lastIntake, verdict, error } =
+  const { world, building, advancing, lastUserFixture, lastIntake, verdict, jobOffers, error } =
     useCareerStore();
+  const acceptJobOffer = useCareerStore((s) => s.acceptJobOffer);
   const playNext = useCareerStore((s) => s.playNext);
   const simToSeasonEnd = useCareerStore((s) => s.simToSeasonEnd);
   const startNextSeason = useCareerStore((s) => s.startNextSeason);
@@ -134,15 +135,30 @@ export function CareerScreen() {
           <Text style={styles.cardLabel}>Board verdict — target: {verdict.targetLabel}</Text>
           <Text style={styles.cardValue}>{verdict.message}</Text>
           {verdict.verdict === 'sacked' ? (
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => {
-                reset();
-                navigate('menu');
-              }}
-            >
-              <Text style={styles.primaryButtonText}>Career over — back to menu</Text>
-            </Pressable>
+            <>
+              {(jobOffers ?? []).map((offer) => (
+                <Pressable
+                  key={offer.id}
+                  style={styles.primaryButton}
+                  onPress={() => acceptJobOffer(offer.id)}
+                >
+                  <Text style={styles.primaryButtonText}>
+                    Take over {offer.name} (rep {offer.reputation})
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  reset();
+                  navigate('menu');
+                }}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {(jobOffers ?? []).length > 0 ? 'Retire instead' : 'No offers — retire'}
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <Pressable style={styles.primaryButton} onPress={startNextSeason}>
               <Text style={styles.primaryButtonText}>
@@ -183,6 +199,7 @@ export function CareerScreen() {
         {navButton('League table', 'table')}
         {navButton('Transfers', 'transfers')}
         {navButton('Staff', 'staff')}
+        {navButton('Finances', 'finances')}
       </View>
 
       {error !== null && <Text style={styles.error}>{error}</Text>}
