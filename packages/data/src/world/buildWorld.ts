@@ -11,9 +11,11 @@ import {
   clubStartingBalance,
   clubTransferBudget,
   generateLeagueFixtures,
+  staffWageBudget,
   totalMatchdaysFor,
   type WorldClub,
   type WorldPlayer,
+  type WorldStaff,
   type WorldState,
 } from '@footy/engine';
 import {
@@ -25,6 +27,7 @@ import {
 } from '@footy/shared';
 import { WORLD as CONFIG } from '../config/index';
 import { generateSquad, makeNationPicker } from '../generate/players';
+import { generateClubStaff, generateFreeAgentStaff } from '../generate/staff';
 
 export const DEFAULT_WORLD_SEED = 0x20260701;
 
@@ -52,6 +55,11 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
 
   const players: WorldPlayer[] = [];
   const clubs: WorldClub[] = [];
+  const staff: WorldStaff[] = [];
+  const leagueBank =
+    CONFIG.nameBanks[
+      CONFIG.nations.find((n) => n.code === leagueConfig.nation)?.nameBank ?? 'english'
+    ];
   let userClubId = 0;
 
   leagueConfig.clubs.forEach((clubConfig, index) => {
@@ -96,6 +104,20 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
     const styles =
       clubConfig.reputation >= 80 ? ELITE_STYLES : clubConfig.reputation >= 60 ? MID_STYLES : LOW_STYLES;
     const styleRng = createRng(deriveSeed(seed, 0x571e5, clubId));
+    const formation = FORMATION_KEYS[styleRng.nextInt(0, FORMATION_KEYS.length - 1)] ?? '4-4-2';
+    const playStyle = styles[styleRng.nextInt(0, styles.length - 1)] ?? 'balanced';
+
+    const staffRng = createRng(deriveSeed(seed, 0x5aff, clubId));
+    const staffIds: number[] = [];
+    let staffBill = 0;
+    for (const seedStaff of generateClubStaff(clubConfig.reputation, playStyle, leagueBank, staffRng)) {
+      const id = staff.length + 1;
+      staffIds.push(id);
+      staffBill += seedStaff.wage;
+      staff.push({ ...seedStaff, id, clubId });
+    }
+
+    const trainingFacilities = clamp(Math.round(clubConfig.reputation / 5), 1, 20);
 
     clubs.push({
       id: clubId,
@@ -108,13 +130,23 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
       balance: clubStartingBalance(clubConfig.reputation),
       budgetTransfer: clubTransferBudget(clubConfig.reputation),
       budgetWage: Math.round(squad.reduce((sum, p) => sum + p.wage, 0) * 1.15),
-      tactics: {
-        formation: FORMATION_KEYS[styleRng.nextInt(0, FORMATION_KEYS.length - 1)] ?? '4-4-2',
-        playStyle: styles[styleRng.nextInt(0, styles.length - 1)] ?? 'balanced',
-      },
+      budgetStaffWage: Math.max(
+        Math.round(staffBill * 1.3),
+        staffWageBudget(clubConfig.reputation),
+      ),
+      trainingFacilities,
+      youthFacilities: clamp(trainingFacilities + staffRng.nextInt(-2, 1), 1, 20),
+      tactics: { formation, playStyle },
       playerIds,
+      staffIds,
     });
   });
+
+  // Free-agent coach pool for the hiring market.
+  const poolRng = createRng(deriveSeed(seed, 0xfa9e));
+  for (const seedStaff of generateFreeAgentStaff(60, leagueBank, poolRng)) {
+    staff.push({ ...seedStaff, id: staff.length + 1, clubId: 0 });
+  }
 
   if (userClubId === 0) throw new Error(`club ${options.userClubKey} not in ${options.leagueKey}`);
 
@@ -138,6 +170,7 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
     ],
     clubs,
     players,
+    staff,
     fixtures: generateLeagueFixtures(1, clubIds, 1),
     transfers: [],
   };

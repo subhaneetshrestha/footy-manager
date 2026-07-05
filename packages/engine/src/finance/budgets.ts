@@ -15,3 +15,17 @@ export function clubTransferBudget(reputation: number): number {
 export function clubStartingBalance(reputation: number): number {
   return clubTransferBudget(reputation) * 2;
 }
+
+/**
+ * Weekly staff wage budget floor (requirement #11): reputation-scaled so
+ * smaller clubs can afford fewer/worse coaches. Hydrators may top this up to
+ * cover the generated staff's bill plus modest headroom.
+ */
+export function staffWageBudget(reputation: number): number {
+  return Math.round((8_000 * powInt(1.06, reputation - 50)) / 100) * 100;
+}
+
+/** Weekly coach wage from mean ability rating (1-10). */
+export function coachWage(meanRating: number): number {
+  return Math.max(200, Math.round((100 * meanRating * meanRating) / 50) * 50);
+}

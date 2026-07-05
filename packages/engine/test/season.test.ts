@@ -87,8 +87,12 @@ function makeWorld(qualities: number[], seed = 123): WorldState {
       balance: 50_000_000,
       budgetTransfer: 30_000_000,
       budgetWage: 200_000,
+      budgetStaffWage: 30_000,
+      trainingFacilities: 12,
+      youthFacilities: 12,
       tactics: { formation: '4-4-2' as const, playStyle: 'balanced' as const },
       playerIds,
+      staffIds: [],
     };
   });
 
@@ -112,6 +116,7 @@ function makeWorld(qualities: number[], seed = 123): WorldState {
     ],
     clubs,
     players,
+    staff: [],
     fixtures: generateLeagueFixtures(1, clubIds, 1),
     transfers: [],
   };

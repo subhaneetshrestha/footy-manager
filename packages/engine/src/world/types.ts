@@ -9,7 +9,7 @@
  * unordered iteration in the engine).
  */
 
-import type { PlayerRatings, PlayStyle, Position } from '@footy/shared';
+import type { PlayerRatings, PlayStyle, Position, StaffRole } from '@footy/shared';
 import type { FormationKey } from './formations';
 
 export interface WorldPlayer {
@@ -34,6 +34,24 @@ export interface ClubTactics {
   playStyle: PlayStyle;
 }
 
+/**
+ * Coach/staff member (§8): 1-10 rating per department plus a per-play-style
+ * specialization map. clubId 0 = free agent.
+ */
+export interface WorldStaff {
+  id: number;
+  clubId: number;
+  name: string;
+  role: StaffRole;
+  ratingGk: number;
+  ratingDef: number;
+  ratingMid: number;
+  ratingAtt: number;
+  playstyleRatings: Record<PlayStyle, number>;
+  /** Weekly wage, EUR. */
+  wage: number;
+}
+
 export interface WorldClub {
   id: number;
   leagueId: number;
@@ -45,8 +63,14 @@ export interface WorldClub {
   balance: number;
   budgetTransfer: number;
   budgetWage: number;
+  /** Weekly staff wage budget (§8: smaller clubs afford fewer/worse coaches). */
+  budgetStaffWage: number;
+  /** 1-20 (contract §3.8). */
+  trainingFacilities: number;
+  youthFacilities: number;
   tactics: ClubTactics;
   playerIds: number[];
+  staffIds: number[];
 }
 
 export interface WorldLeague {
@@ -92,8 +116,15 @@ export interface WorldState {
   leagues: WorldLeague[];
   clubs: WorldClub[];
   players: WorldPlayer[];
+  staff: WorldStaff[];
   fixtures: Fixture[];
   transfers: TransferRecord[];
+}
+
+export function staffById(world: WorldState, id: number): WorldStaff {
+  const staff = world.staff[id - 1];
+  if (staff === undefined || staff.id !== id) throw new Error(`bad staff id ${id}`);
+  return staff;
 }
 
 export function playerById(world: WorldState, id: number): WorldPlayer {
@@ -127,5 +158,8 @@ export function assertWorldInvariants(world: WorldState): void {
   });
   world.fixtures.forEach((f, i) => {
     if (f.id !== i + 1) throw new Error(`fixtures[${i}].id = ${f.id}, expected ${i + 1}`);
+  });
+  world.staff.forEach((s, i) => {
+    if (s.id !== i + 1) throw new Error(`staff[${i}].id = ${s.id}, expected ${i + 1}`);
   });
 }

@@ -148,6 +148,7 @@ export function CareerScreen() {
         {navButton('Tactics', 'tactics')}
         {navButton('League table', 'table')}
         {navButton('Transfers', 'transfers')}
+        {navButton('Staff', 'staff')}
       </View>
 
       {error !== null && <Text style={styles.error}>{error}</Text>}

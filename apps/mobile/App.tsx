@@ -11,6 +11,7 @@ import { listSaves, type SaveSlotMeta } from './src/db/saves';
 import { ClubSelectScreen } from './src/screens/ClubSelectScreen';
 import { CareerScreen } from './src/screens/CareerScreen';
 import { SquadScreen } from './src/screens/SquadScreen';
+import { StaffScreen } from './src/screens/StaffScreen';
 import { TacticsScreen } from './src/screens/TacticsScreen';
 import { TableScreen } from './src/screens/TableScreen';
 import { TransfersScreen } from './src/screens/TransfersScreen';
@@ -106,6 +107,8 @@ function Router() {
         <TableScreen />
       ) : screen === 'transfers' ? (
         <TransfersScreen />
+      ) : screen === 'staff' ? (
+        <StaffScreen />
       ) : (
         <MainMenu />
       )}

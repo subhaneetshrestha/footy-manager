@@ -15,7 +15,8 @@ export type Screen =
   | 'squad'
   | 'tactics'
   | 'table'
-  | 'transfers';
+  | 'transfers'
+  | 'staff';
 
 /** The club chosen in the New Game flow (career setup, pre-save). */
 export interface SelectedClub {

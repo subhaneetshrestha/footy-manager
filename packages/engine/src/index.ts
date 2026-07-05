@@ -12,3 +12,5 @@ export * from './squad/strength';
 export * from './tactics/computeProfile';
 export * from './transfers/aiTransfers';
 export * from './board/board';
+export * from './staff/hiring';
+export * from './growth/growth';

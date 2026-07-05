@@ -11,6 +11,7 @@ import { computeTacticalProfile } from '../tactics/computeProfile';
 import { clubOf, playerById, type Fixture, type WorldState } from '../world/types';
 import { fixturesForMatchday, transferWindowFor } from './calendar';
 import { runAiTransferWindowTick } from '../transfers/aiTransfers';
+import { GROWTH_TICK_INTERVAL, growthTick } from '../growth/growth';
 
 /** Build the Tier-B input for a club from its live squad + tactics. */
 export function matchTeamFor(world: WorldState, clubId: number): FastMatchTeam {
@@ -47,6 +48,10 @@ export function playMatchday(world: WorldState): Fixture[] {
     fixture.homeGoals = score.homeGoals;
     fixture.awayGoals = score.awayGoals;
     fixture.played = true;
+  }
+
+  if (matchday % GROWTH_TICK_INTERVAL === 0) {
+    growthTick(world, matchday); // §5: development modulated by coaching (Phase 2)
   }
 
   world.currentMatchday++;

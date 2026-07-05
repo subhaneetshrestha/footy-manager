@@ -8,9 +8,12 @@
 import { create } from 'zustand';
 import { buildWorldForLeague } from '@footy/data';
 import {
+  autoFillStaff,
   clubOf,
   endOfSeasonVerdict,
   executeTransfer,
+  fireStaff,
+  hireStaff,
   isSeasonOver,
   playMatchday,
   rolloverSeason,
@@ -37,6 +40,9 @@ interface CareerState {
   simToSeasonEnd(): void;
   setTactics(formation: FormationKey, style: PlayStyle): void;
   buyPlayer(playerId: number): void;
+  hireStaffMember(staffId: number): void;
+  fireStaffMember(staffId: number): void;
+  autoFillStaffRoles(): void;
   startNextSeason(): void;
   reset(): void;
 }
@@ -125,6 +131,35 @@ export const useCareerStore = create<CareerState>((set, get) => ({
     } catch (e) {
       set({ error: e instanceof Error ? e.message : String(e) });
     }
+  },
+
+  hireStaffMember(staffId) {
+    const { world } = get();
+    if (!world) return;
+    try {
+      hireStaff(world, staffId, world.userClubId);
+      set({ world: refresh(world), error: null });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
+  fireStaffMember(staffId) {
+    const { world } = get();
+    if (!world) return;
+    try {
+      fireStaff(world, staffId);
+      set({ world: refresh(world), error: null });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
+  autoFillStaffRoles() {
+    const { world } = get();
+    if (!world) return;
+    autoFillStaff(world, world.userClubId);
+    set({ world: refresh(world), error: null });
   },
 
   startNextSeason() {
