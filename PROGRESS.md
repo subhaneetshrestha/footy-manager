@@ -20,13 +20,13 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 | 1 — Playable vertical slice | ✅ done | Full season vs one league (D6), tactics→λ, tables, minimal board, transfers, rollover, career UI. Remaining gate item: save/Continue needs a device (expo-sqlite unavailable on web preview, D7). |
 | 2 — Coaches/staff/growth | ✅ done | Gate proven: matched elite coaching >1.5× development; budget-constrained small clubs. |
 | 3 — Injuries/loans/contracts | ✅ done | Gate proven: believable injury volume (exposure model, Fuller tiers, physio effects), loan clauses + AI loans, contract lifecycle + free agency. |
-| 4 — Tier-A 2D match engine | ▶ next | Deterministic event timeline + pitch playback + commentary + live stats + two-engine parity gate. Renderer decision: RN-View playback first (works on web preview), Skia swap at the device milestone for the 60fps gate. |
-| 5 — Youth/regens | not started | Also fixes long-career squad shrinkage (releases > intakes today). |
+| 4 — Tier-A 2D match engine | ✅ core done | `match/tierA.ts`: pre-generated deterministic event timeline (pass/carry/shot/goal/save/cards, x/y, xG, XI actors), parity with Tier B BY CONSTRUCTION (same `expectedGoalRates`; shot rate = λ/(90·meanXG·CQM)) + standing statistical parity test (±0.14 over 800 sims × 3 configs). `match/commentary.ts` deterministic templates. User fixture resolved by Tier A inside `playMatchday(world, onUserMatch?)`. App `MatchScreen`: RN-View pitch playback, score/clock, commentary ticker, live stats, pause/speed/skip. Remaining for gate: Skia renderer + 60fps check on device (D8); zone-based possession model is cosmetic-first (chance timing calibrated, not spatially emergent). |
+| 5 — Youth/regens | ▶ next | Also fixes long-career squad shrinkage (releases > intakes today). |
 | 6 — Deep finance/FFP | not started | |
 
 ## Verification state
 
-- `pnpm -r test` → 149 tests green (shared 25, engine 73, data 38, mobile 13).
+- `pnpm -r test` → 158 tests green (shared 25, engine 82, data 38, mobile 13).
 - `pnpm -r typecheck` → 4/4 clean.
 - CI (`.github/workflows/ci.yml`): determinism matrix (ubuntu/windows/macos,
   golden battery must match `packages/engine/test/golden.json` byte-for-byte),
@@ -74,17 +74,20 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 
 ## Next session should
 
-1. Phase 4 per PLAN §6 Tier A: minute-by-minute deterministic event timeline
-   (`{minute,type,actorId,x,y,xg?}`), pre-generated then played back;
-   commentary selector; live-stats reducer; expectation parity with Tier B as
-   a standing engine test (same `expectedGoalRates` inputs); user fixture
-   resolved by Tier A inside `playMatchday` (others stay Tier B).
-2. App: MatchScreen (pitch playback via RN Views for now — D8, Skia at device
-   milestone), score/clock, commentary ticker, stats, speed/skip controls.
-3. Then Phase 5 (regens — world currently shrinks slowly over many seasons).
+1. Phase 5 (PLAN §15): youth academy + yearly regen intakes at rollover
+   (name banks + generator already support it — `generateSquad` internals are
+   reusable; intake quality scales with youth_facilities + youth coach +
+   club/nation reputation). This also fixes the slow squad-shrink from
+   contract releases outnumbering intakes.
+2. Then Phase 6 (deep finance/FFP) or the device milestone (firewall rule →
+   Expo Go → save/Continue verification, threading spike, Skia + 60fps gate).
 
 ## Session log
 
+- **2026-07-05 (later)**: Phase 4 core: Tier-A engine + commentary + parity
+  gate + MatchScreen playback; PROGRESS.md/CLAUDE.md introduced (`677ef76`).
+  158 tests. Note: `playMatchday` gained an `onUserMatch` callback; watching
+  vs skipping provably yields identical world state (tested).
 - **2026-07-05**: Phases 0-3 built end-to-end this session. CI stood up and
   green (determinism matrix passed 3 OSes at first attempt). Web preview used
   for manual verification throughout (phone blocked by firewall). Commits:

@@ -7,6 +7,7 @@
 
 import { createRng, deriveSeed } from '@footy/shared';
 import { simulateFastMatch, type FastMatchTeam } from '../match/fastMatch';
+import { simulateTierAMatch, type DetailedMatch } from '../match/tierA';
 import { selectBestXi, teamStrength } from '../squad/strength';
 import { computeTacticalProfile } from '../tactics/computeProfile';
 import { clubOf, playerById, type Fixture, type WorldState } from '../world/types';
@@ -54,8 +55,13 @@ export function isSeasonOver(world: WorldState): boolean {
 /**
  * Play the next matchday across all leagues: heal, window business (buys +
  * loans), matches with injury exposure, training injuries, growth tick.
+ * The user's fixture is resolved by the Tier-A detailed engine (§6); pass
+ * onUserMatch to receive its pre-generated timeline for playback.
  */
-export function playMatchday(world: WorldState): Fixture[] {
+export function playMatchday(
+  world: WorldState,
+  onUserMatch?: (detail: DetailedMatch) => void,
+): Fixture[] {
   if (isSeasonOver(world)) return [];
   const matchday = world.currentMatchday;
 
@@ -72,12 +78,26 @@ export function playMatchday(world: WorldState): Fixture[] {
     const home = prepareTeam(world, fixture.homeClubId);
     const away = prepareTeam(world, fixture.awayClubId);
     const rng = createRng(deriveSeed(world.seed, world.season, matchday, fixture.id));
-    const score = simulateFastMatch(home.team, away.team, rng);
-    fixture.homeGoals = score.homeGoals;
-    fixture.awayGoals = score.awayGoals;
+
+    const isUserFixture =
+      fixture.homeClubId === world.userClubId || fixture.awayClubId === world.userClubId;
+    if (isUserFixture) {
+      const detail = simulateTierAMatch(home.team, away.team, rng, {
+        fixtureId: fixture.id,
+        homeXi: home.xiPlayerIds,
+        awayXi: away.xiPlayerIds,
+      });
+      fixture.homeGoals = detail.homeGoals;
+      fixture.awayGoals = detail.awayGoals;
+      onUserMatch?.(detail);
+    } else {
+      const score = simulateFastMatch(home.team, away.team, rng);
+      fixture.homeGoals = score.homeGoals;
+      fixture.awayGoals = score.awayGoals;
+    }
     fixture.played = true;
 
-    // Same stream, after the score draw: match-exposure injuries (§3.6).
+    // Same stream, after the match draws: match-exposure injuries (§3.6).
     const participants = [...home.xiPlayerIds, ...away.xiPlayerIds];
     matchInjuryPass(world, matchday, participants, rng);
     for (const id of participants) playedIds.add(id);

@@ -145,7 +145,10 @@ export function CareerScreen() {
           <Pressable
             style={[styles.primaryButton, advancing && styles.disabled]}
             disabled={advancing}
-            onPress={playNext}
+            onPress={() => {
+              playNext();
+              if (useCareerStore.getState().liveMatch !== null) navigate('match');
+            }}
           >
             <Text style={styles.primaryButtonText}>Play matchday</Text>
           </Pressable>

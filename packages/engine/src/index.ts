@@ -1,5 +1,7 @@
 export * from './math/detMath';
 export * from './match/fastMatch';
+export * from './match/tierA';
+export * from './match/commentary';
 export * from './finance/valuation';
 export * from './finance/budgets';
 export * from './world/types';

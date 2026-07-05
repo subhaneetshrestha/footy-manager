@@ -24,6 +24,7 @@ import {
   rolloverSeason,
   transferWindowFor,
   type BoardVerdict,
+  type DetailedMatch,
   type Fixture,
   type FormationKey,
   type WorldState,
@@ -37,6 +38,8 @@ interface CareerState {
   /** True while a long sim (rest of season) runs. */
   advancing: boolean;
   lastUserFixture: Fixture | null;
+  /** Pre-generated Tier-A timeline of the just-played user match (§6). */
+  liveMatch: DetailedMatch | null;
   verdict: BoardVerdict | null;
   error: string | null;
 
@@ -51,6 +54,7 @@ interface CareerState {
   renewPlayerContract(playerId: number): void;
   loanOutPlayer(playerId: number): void;
   startNextSeason(): void;
+  dismissMatch(): void;
   reset(): void;
 }
 
@@ -70,6 +74,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
   building: false,
   advancing: false,
   lastUserFixture: null,
+  liveMatch: null,
   verdict: null,
   error: null,
 
@@ -89,10 +94,14 @@ export const useCareerStore = create<CareerState>((set, get) => ({
   playNext() {
     const { world } = get();
     if (!world || isSeasonOver(world)) return;
-    const played = playMatchday(world);
+    let detail: DetailedMatch | null = null;
+    const played = playMatchday(world, (d) => {
+      detail = d;
+    });
     set({
       world: refresh(world),
       lastUserFixture: userFixtureOf(played, world.userClubId),
+      liveMatch: detail,
       verdict: isSeasonOver(world) ? endOfSeasonVerdict(world, world.userClubId) : null,
       error: null,
     });
@@ -211,12 +220,17 @@ export const useCareerStore = create<CareerState>((set, get) => ({
     set({ world: refresh(world), verdict: null, lastUserFixture: null, error: null });
   },
 
+  dismissMatch() {
+    set({ liveMatch: null });
+  },
+
   reset() {
     set({
       world: null,
       building: false,
       advancing: false,
       lastUserFixture: null,
+      liveMatch: null,
       verdict: null,
       error: null,
     });

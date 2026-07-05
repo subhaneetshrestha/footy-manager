@@ -12,6 +12,7 @@ import { ClubSelectScreen } from './src/screens/ClubSelectScreen';
 import { CareerScreen } from './src/screens/CareerScreen';
 import { SquadScreen } from './src/screens/SquadScreen';
 import { StaffScreen } from './src/screens/StaffScreen';
+import { MatchScreen } from './src/screens/MatchScreen';
 import { TacticsScreen } from './src/screens/TacticsScreen';
 import { TableScreen } from './src/screens/TableScreen';
 import { TransfersScreen } from './src/screens/TransfersScreen';
@@ -109,6 +110,8 @@ function Router() {
         <TransfersScreen />
       ) : screen === 'staff' ? (
         <StaffScreen />
+      ) : screen === 'match' ? (
+        <MatchScreen />
       ) : (
         <MainMenu />
       )}
