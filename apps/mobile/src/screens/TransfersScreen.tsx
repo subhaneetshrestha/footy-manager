@@ -6,7 +6,9 @@
 import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
+  activeLoanFor,
   clubOf,
+  loanCandidatesFrom,
   playerById,
   transferMarket,
   transferWindowFor,
@@ -22,6 +24,7 @@ export function TransfersScreen() {
   const navigate = useAppStore((s) => s.navigate);
   const world = useCareerStore((s) => s.world);
   const buyPlayer = useCareerStore((s) => s.buyPlayer);
+  const loanOut = useCareerStore((s) => s.loanOutPlayer);
   const error = useCareerStore((s) => s.error);
 
   if (!world) {
@@ -40,6 +43,10 @@ export function TransfersScreen() {
     .filter((t) => t.fromClubId === world.userClubId || t.toClubId === world.userClubId)
     .slice(-8)
     .reverse();
+  const loanables = loanCandidatesFrom(world, world.userClubId);
+  const userLoans = world.loans.filter(
+    (l) => l.ownerClubId === world.userClubId || l.loanClubId === world.userClubId,
+  );
 
   return (
     <View style={styles.container}>
@@ -62,23 +69,66 @@ export function TransfersScreen() {
           <Text style={styles.section}>Affordable targets ({market.length})</Text>
         }
         ListFooterComponent={
-          userTransfers.length > 0 ? (
-            <View style={styles.log}>
-              <Text style={styles.section}>Your club's business</Text>
-              {userTransfers.map((t, i) => {
-                const player = playerById(world, t.playerId);
-                const incoming = t.toClubId === world.userClubId;
-                return (
-                  <Text key={i} style={styles.logLine}>
-                    {incoming ? 'IN ' : 'OUT'} {player.name} · {formatMoney(t.fee)} ·{' '}
-                    {incoming
-                      ? `from ${clubOf(world, t.fromClubId).shortName}`
-                      : `to ${clubOf(world, t.toClubId).shortName}`}
-                  </Text>
-                );
-              })}
-            </View>
-          ) : null
+          <View style={styles.log}>
+            {loanables.length > 0 && (
+              <>
+                <Text style={styles.section}>Loanable youngsters ({loanables.length})</Text>
+                {loanables.map((p) => (
+                  <View key={p.id} style={styles.row}>
+                    <Text style={styles.pos}>{p.position}</Text>
+                    <View style={styles.nameBlock}>
+                      <Text style={styles.name}>{p.name}</Text>
+                      <Text style={styles.meta}>
+                        {p.age} yrs · OVR {p.ovr} → POT {p.potential}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={[styles.buy, window === null && styles.buyDisabled]}
+                      disabled={window === null}
+                      onPress={() => loanOut(p.id)}
+                    >
+                      <Text style={styles.buyText}>Loan out</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </>
+            )}
+            {userLoans.length > 0 && (
+              <>
+                <Text style={styles.section}>Active loans</Text>
+                {userLoans.map((l, i) => {
+                  const player = playerById(world, l.playerId);
+                  const out = l.ownerClubId === world.userClubId;
+                  return (
+                    <Text key={i} style={styles.logLine}>
+                      {out ? 'OUT' : 'IN '} {player.name} ·{' '}
+                      {out
+                        ? `at ${clubOf(world, l.loanClubId).shortName}`
+                        : `from ${clubOf(world, l.ownerClubId).shortName}`}
+                      {l.optionToBuyFee !== null ? ` · option ${formatMoney(l.optionToBuyFee)}` : ''}
+                    </Text>
+                  );
+                })}
+              </>
+            )}
+            {userTransfers.length > 0 && (
+              <>
+                <Text style={styles.section}>Your club's business</Text>
+                {userTransfers.map((t, i) => {
+                  const player = playerById(world, t.playerId);
+                  const incoming = t.toClubId === world.userClubId;
+                  const other = incoming ? t.fromClubId : t.toClubId;
+                  const otherName = other === 0 ? 'free agency' : clubOf(world, other).shortName;
+                  return (
+                    <Text key={i} style={styles.logLine}>
+                      {incoming ? 'IN ' : 'OUT'} {player.name} · {formatMoney(t.fee)} ·{' '}
+                      {incoming ? `from ${otherName}` : `to ${otherName}`}
+                    </Text>
+                  );
+                })}
+              </>
+            )}
+          </View>
         }
         renderItem={({ item }) => (
           <View style={styles.row}>
@@ -86,8 +136,8 @@ export function TransfersScreen() {
             <View style={styles.nameBlock}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>
-                {clubOf(world, item.clubId).shortName} · {item.age} yrs ·{' '}
-                {formatMoney(item.value)}
+                {item.clubId === 0 ? 'Free agent' : clubOf(world, item.clubId).shortName} ·{' '}
+                {item.age} yrs · {formatMoney(item.value)}
               </Text>
             </View>
             <Text style={[styles.ovr, { color: ratingColor(theme, item.ovr) }]}>{item.ovr}</Text>

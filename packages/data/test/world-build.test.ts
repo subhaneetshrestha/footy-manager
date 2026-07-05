@@ -80,4 +80,19 @@ describe('buildWorldForLeague + full season (Phase-1 gate)', () => {
       expect(t.fromClubId).not.toBe(t.toClubId);
     }
   });
+
+  it('injuries hit believable volume over a 38-matchday season (Phase-3 gate)', () => {
+    const world = buildWorldForLeague({ leagueKey: 'eng.1', userClubKey: 'arsenal' });
+    simulateRestOfSeason(world);
+    // 20 clubs × ≈8-14 injuries each is the calibration target band.
+    expect(world.injuries.length).toBeGreaterThan(100);
+    expect(world.injuries.length).toBeLessThan(700);
+    const severe = world.injuries.filter((r) => r.tier === 'severe').length;
+    expect(severe / world.injuries.length).toBeLessThan(0.2);
+    for (const loan of world.loans) {
+      expect(loan.ownerClubId).not.toBe(loan.loanClubId);
+      expect(loan.wageSplit).toBeGreaterThanOrEqual(0);
+      expect(loan.wageSplit).toBeLessThanOrEqual(1);
+    }
+  });
 });

@@ -13,6 +13,8 @@ export function SquadScreen() {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigate = useAppStore((s) => s.navigate);
   const world = useCareerStore((s) => s.world);
+  const renew = useCareerStore((s) => s.renewPlayerContract);
+  const error = useCareerStore((s) => s.error);
 
   if (!world) {
     navigate('career');
@@ -35,22 +37,38 @@ export function SquadScreen() {
         <Text style={styles.sub}>
           {squad.length} players · avg OVR {avgOvr.toFixed(1)}
         </Text>
+        {error !== null && <Text style={styles.error}>{error}</Text>}
       </View>
       <FlatList
         data={squad}
         keyExtractor={(p) => String(p.id)}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.pos}>{item.position}</Text>
-            <View style={styles.nameBlock}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>
-                {item.age} yrs · {formatMoney(item.value)} · {formatMoney(item.wage)}/wk
-              </Text>
+        renderItem={({ item }) => {
+          const injured = item.injury !== null && item.injury.returnMatchday > world.currentMatchday;
+          const outFor = injured ? item.injury!.returnMatchday - world.currentMatchday : 0;
+          return (
+            <View style={styles.row}>
+              <Text style={styles.pos}>{item.position}</Text>
+              <View style={styles.nameBlock}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.meta}>
+                  {item.age} yrs · {formatMoney(item.value)} · {formatMoney(item.wage)}/wk ·{' '}
+                  {item.contractYearsLeft}y left
+                </Text>
+                {injured && (
+                  <Text style={styles.injury}>
+                    {item.injury!.type} — out ~{outFor} matchday{outFor === 1 ? '' : 's'}
+                  </Text>
+                )}
+              </View>
+              {item.contractYearsLeft <= 1 && (
+                <Pressable style={styles.renew} onPress={() => renew(item.id)}>
+                  <Text style={styles.renewText}>Renew</Text>
+                </Pressable>
+              )}
+              <Text style={[styles.ovr, { color: ratingColor(theme, item.ovr) }]}>{item.ovr}</Text>
             </View>
-            <Text style={[styles.ovr, { color: ratingColor(theme, item.ovr) }]}>{item.ovr}</Text>
-          </View>
-        )}
+          );
+        }}
       />
     </View>
   );
@@ -79,6 +97,15 @@ function makeStyles(theme: Theme) {
     nameBlock: { flex: 1 },
     name: { color: colors.textPrimary, ...typography.body },
     meta: { color: colors.textMuted, ...typography.caption },
+    injury: { color: colors.negative, ...typography.caption },
+    error: { color: colors.negative, ...typography.caption },
+    renew: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    renewText: { color: colors.textOnAccent, ...typography.caption },
     ovr: { ...typography.title, width: 34, textAlign: 'right' },
   });
 }

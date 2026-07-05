@@ -14,3 +14,6 @@ export * from './transfers/aiTransfers';
 export * from './board/board';
 export * from './staff/hiring';
 export * from './growth/growth';
+export * from './injury/injuries';
+export * from './transfers/loans';
+export * from './transfers/contracts';

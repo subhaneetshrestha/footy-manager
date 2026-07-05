@@ -9,20 +9,31 @@
 import { clamp } from '@footy/shared';
 import { playerValue } from '../finance/valuation';
 import { generateLeagueFixtures } from './calendar';
+import { processContractsAtRollover } from '../transfers/contracts';
+import { processLoansAtRollover } from '../transfers/loans';
 import { clubOf, type WorldState } from '../world/types';
 
 export function rolloverSeason(world: WorldState): void {
+  processLoansAtRollover(world); // returns/options first — parents get players back
+  processContractsAtRollover(world); // then contracts tick, renew or release
+
   for (const player of world.players) {
     player.age++;
-    const clubRep = clubOf(world, player.clubId).reputation;
+    const clubRep = player.clubId === 0 ? 30 : clubOf(world, player.clubId).reputation;
     player.value = playerValue({
       ovr: player.ovr,
       potential: player.potential,
       age: player.age,
-      contractYearsLeft: 2,
+      contractYearsLeft: player.contractYearsLeft,
       reputation: clamp(Math.round(0.9 * player.ovr + 0.3 * clubRep - 20), 1, 99),
       position: player.position,
     });
+
+    if (player.injury !== null) {
+      const remaining = player.injury.returnMatchday - world.totalMatchdays;
+      if (remaining <= 1) player.injury = null;
+      else player.injury.returnMatchday = remaining;
+    }
   }
 
   world.fixtures = [];

@@ -9,8 +9,40 @@
  * unordered iteration in the engine).
  */
 
-import type { PlayerRatings, PlayStyle, Position, StaffRole } from '@footy/shared';
+import type { InjuryTier, PlayerRatings, PlayStyle, Position, StaffRole } from '@footy/shared';
 import type { FormationKey } from './formations';
+
+/** A player's current injury; healed lazily once returnMatchday is reached. */
+export interface ActiveInjury {
+  tier: InjuryTier;
+  type: string;
+  daysTotal: number;
+  /** First matchday the player is available again (current season's frame). */
+  returnMatchday: number;
+}
+
+export interface InjuryRecord {
+  playerId: number;
+  clubId: number;
+  season: number;
+  matchday: number;
+  tier: InjuryTier;
+  type: string;
+  days: number;
+}
+
+/** An active loan (§8): the player's clubId points at the loan club. */
+export interface WorldLoan {
+  playerId: number;
+  ownerClubId: number;
+  loanClubId: number;
+  /** Share of wages paid by the loan club, 0..1. */
+  wageSplit: number;
+  optionToBuyFee: number | null;
+  obligationToBuy: boolean;
+  recallAllowed: boolean;
+  startSeason: number;
+}
 
 export interface WorldPlayer {
   id: number;
@@ -23,9 +55,12 @@ export interface WorldPlayer {
   potential: number;
   value: number;
   wage: number;
+  /** Whole years left on the contract; 0 = expiring/free agent. */
+  contractYearsLeft: number;
   form: number;
   fitness: number;
   morale: number;
+  injury: ActiveInjury | null;
   ratings: PlayerRatings;
 }
 
@@ -119,6 +154,9 @@ export interface WorldState {
   staff: WorldStaff[];
   fixtures: Fixture[];
   transfers: TransferRecord[];
+  injuries: InjuryRecord[];
+  /** Active loans only; cleared/processed at season rollover. */
+  loans: WorldLoan[];
 }
 
 export function staffById(world: WorldState, id: number): WorldStaff {

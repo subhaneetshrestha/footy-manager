@@ -94,9 +94,11 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
         potential: generated.potential,
         value: generated.value,
         wage: generated.wage,
+        contractYearsLeft: generated.contractYearsLeft,
         form: generated.form,
         fitness: generated.fitness,
         morale: generated.morale,
+        injury: null,
         ratings: generated.ratings,
       });
     }
@@ -173,6 +175,8 @@ export function buildWorldForLeague(options: BuildWorldOptions): WorldState {
     staff,
     fixtures: generateLeagueFixtures(1, clubIds, 1),
     transfers: [],
+    injuries: [],
+    loans: [],
   };
   assertWorldInvariants(world);
   return world;

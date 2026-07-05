@@ -70,9 +70,11 @@ function makeWorld(qualities: number[], seed = 123): WorldState {
         potential: clamp(ovr + 6, 20, 99),
         value: 1_000_000 + ovr * 10_000,
         wage: 5_000,
+        contractYearsLeft: 3,
         form: 0,
         fitness: 100,
         morale: 70,
+        injury: null,
         ratings: fullRatings(ovr),
       });
     });
@@ -119,6 +121,8 @@ function makeWorld(qualities: number[], seed = 123): WorldState {
     staff: [],
     fixtures: generateLeagueFixtures(1, clubIds, 1),
     transfers: [],
+    injuries: [],
+    loans: [],
   };
 }
 

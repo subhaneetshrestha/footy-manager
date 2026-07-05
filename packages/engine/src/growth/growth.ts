@@ -21,6 +21,7 @@ import {
   type PositionGroup,
   type Rng,
 } from '@footy/shared';
+import { availableSquad } from '../injury/injuries';
 import { selectBestXi } from '../squad/strength';
 import { staffOf } from '../staff/hiring';
 import {
@@ -134,12 +135,18 @@ export function growthTick(world: WorldState, matchday: number): void {
     const squad = club.playerIds.map((id) => playerById(world, id));
     let xiIds: Set<number>;
     try {
-      xiIds = new Set(selectBestXi(squad, club.tactics.formation).slots.map((s) => s.player.id));
+      const fit = availableSquad(world, club.id, matchday);
+      xiIds = new Set(
+        selectBestXi(fit.length >= 11 ? fit : squad, club.tactics.formation).slots.map(
+          (s) => s.player.id,
+        ),
+      );
     } catch {
       xiIds = new Set();
     }
 
     for (const player of squad) {
+      if (player.injury !== null) continue; // rehab, not training
       const base = basePointsFor(player.age);
       if (base === 0) continue;
 

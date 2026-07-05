@@ -73,9 +73,11 @@ function makeWorld(age: number): WorldState {
         potential: clamp(ovr + 25, 20, 99),
         value: 1_000_000,
         wage: 5_000,
+        contractYearsLeft: 3,
         form: 0,
         fitness: 100,
         morale: 70,
+        injury: null,
         ratings: fullRatings(ovr),
       });
     });
@@ -121,6 +123,8 @@ function makeWorld(age: number): WorldState {
     staff: [],
     fixtures: generateLeagueFixtures(1, [1, 2], 1),
     transfers: [],
+    injuries: [],
+    loans: [],
   };
 }
 

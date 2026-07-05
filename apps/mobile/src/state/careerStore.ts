@@ -8,14 +8,19 @@
 import { create } from 'zustand';
 import { buildWorldForLeague } from '@footy/data';
 import {
+  STANDARD_LOAN_TERMS,
   autoFillStaff,
   clubOf,
   endOfSeasonVerdict,
+  executeLoan,
   executeTransfer,
+  findLoanTaker,
   fireStaff,
   hireStaff,
   isSeasonOver,
   playMatchday,
+  playerById,
+  renewContract,
   rolloverSeason,
   transferWindowFor,
   type BoardVerdict,
@@ -43,6 +48,8 @@ interface CareerState {
   hireStaffMember(staffId: number): void;
   fireStaffMember(staffId: number): void;
   autoFillStaffRoles(): void;
+  renewPlayerContract(playerId: number): void;
+  loanOutPlayer(playerId: number): void;
   startNextSeason(): void;
   reset(): void;
 }
@@ -160,6 +167,41 @@ export const useCareerStore = create<CareerState>((set, get) => ({
     if (!world) return;
     autoFillStaff(world, world.userClubId);
     set({ world: refresh(world), error: null });
+  },
+
+  renewPlayerContract(playerId) {
+    const { world } = get();
+    if (!world) return;
+    try {
+      renewContract(world, playerId, 3);
+      set({ world: refresh(world), error: null });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
+  loanOutPlayer(playerId) {
+    const { world } = get();
+    if (!world) return;
+    if (transferWindowFor(world.currentMatchday, world.totalMatchdays) === null) {
+      set({ error: 'The transfer window is closed.' });
+      return;
+    }
+    try {
+      const taker = findLoanTaker(world, playerId);
+      if (taker === null) {
+        set({ error: 'No clubs are interested in a loan right now.' });
+        return;
+      }
+      const player = playerById(world, playerId);
+      executeLoan(world, playerId, taker, {
+        ...STANDARD_LOAN_TERMS,
+        optionToBuyFee: player.value,
+      });
+      set({ world: refresh(world), error: null });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : String(e) });
+    }
   },
 
   startNextSeason() {

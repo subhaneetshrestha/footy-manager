@@ -11,6 +11,7 @@ import {
   clubOf,
   fixturesForMatchday,
   isSeasonOver,
+  playerById,
   tablePositionOf,
   transferWindowFor,
   type Fixture,
@@ -97,6 +98,23 @@ export function CareerScreen() {
         )}
         <Text style={styles.cardMuted}>Transfer budget {formatMoney(club.budgetTransfer)}</Text>
       </View>
+
+      {(() => {
+        const treatmentRoom = club.playerIds
+          .map((id) => playerById(world, id))
+          .filter((p) => p.injury !== null && p.injury.returnMatchday > world.currentMatchday);
+        if (treatmentRoom.length === 0) return null;
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Treatment room ({treatmentRoom.length})</Text>
+            {treatmentRoom.slice(0, 5).map((p) => (
+              <Text key={p.id} style={styles.cardMuted}>
+                {p.name} — {p.injury!.type}, back ~MD {p.injury!.returnMatchday}
+              </Text>
+            ))}
+          </View>
+        );
+      })()}
 
       {verdict !== null && (
         <View style={[styles.card, verdict.verdict === 'sacked' ? styles.cardBad : styles.cardGood]}>

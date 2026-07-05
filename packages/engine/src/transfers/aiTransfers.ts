@@ -35,6 +35,8 @@ function squadRank(world: WorldState, player: WorldPlayer): number {
 
 /** Can this player be prised away (seller-side willingness only)? */
 export function isListable(world: WorldState, player: WorldPlayer): boolean {
+  if (player.clubId === 0) return true; // free agent
+  if (world.loans.some((l) => l.playerId === player.id)) return false; // on loan
   const club = clubOf(world, player.clubId);
   if (club.playerIds.length <= MIN_SQUAD_SIZE) return false;
   return squadRank(world, player) > PROTECTED_RANK;
@@ -59,26 +61,34 @@ export function executeTransfer(
 ): TransferRecord {
   const player = playerById(world, playerId);
   const buyer = clubOf(world, buyingClubId);
-  const seller = clubOf(world, player.clubId);
+  const isFreeAgent = player.clubId === 0;
   const fee = player.value;
 
-  if (buyer.id === seller.id) throw new Error('cannot buy own player');
+  if (world.loans.some((l) => l.playerId === playerId)) {
+    throw new Error('player is on loan');
+  }
+  if (!isFreeAgent && player.clubId === buyer.id) throw new Error('cannot buy own player');
   if (buyer.budgetTransfer < fee) throw new Error('insufficient transfer budget');
   if (buyer.playerIds.length >= MAX_SQUAD_SIZE) throw new Error('buying squad full');
-  if (seller.playerIds.length <= MIN_SQUAD_SIZE) throw new Error('selling squad too small');
 
-  seller.playerIds = seller.playerIds.filter((id) => id !== playerId);
+  if (!isFreeAgent) {
+    const seller = clubOf(world, player.clubId);
+    if (seller.playerIds.length <= MIN_SQUAD_SIZE) throw new Error('selling squad too small');
+    seller.playerIds = seller.playerIds.filter((id) => id !== playerId);
+    seller.balance += fee;
+    seller.budgetTransfer += Math.round(fee * 0.5); // part of the fee is reinvestable
+  }
+
+  const fromClubId = player.clubId;
   buyer.playerIds.push(playerId);
   player.clubId = buyer.id;
-
+  player.contractYearsLeft = Math.max(player.contractYearsLeft, 2); // fresh deal
   buyer.budgetTransfer -= fee;
   buyer.balance -= fee;
-  seller.balance += fee;
-  seller.budgetTransfer += Math.round(fee * 0.5); // part of the fee is reinvestable
 
   const record: TransferRecord = {
     playerId,
-    fromClubId: seller.id,
+    fromClubId,
     toClubId: buyer.id,
     fee,
     season: world.season,
@@ -128,6 +138,19 @@ export function runAiTransferWindowTick(world: WorldState, matchday: number): Tr
   for (const club of world.clubs) {
     if (club.id === world.userClubId) continue;
     const rng = createRng(deriveSeed(world.seed, world.season, matchday, 0x7a5f, club.id));
+
+    // Thin squads refill from free agency first (keeps the world populated).
+    if (club.playerIds.length < 26) {
+      const freeAgents = world.players
+        .filter((p) => p.clubId === 0 && p.value <= club.budgetTransfer)
+        .sort((a, b) => b.ovr - a.ovr || a.id - b.id);
+      const signing = freeAgents[0];
+      if (signing !== undefined) {
+        done.push(executeTransfer(world, signing.id, club.id, matchday));
+        continue;
+      }
+    }
+
     if (rng.nextFloat() > 0.25) continue;
     const record = attemptAiSigning(world, club, matchday, rng);
     if (record !== null) done.push(record);
