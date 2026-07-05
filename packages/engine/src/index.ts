@@ -19,3 +19,4 @@ export * from './growth/growth';
 export * from './injury/injuries';
 export * from './transfers/loans';
 export * from './transfers/contracts';
+export * from './youth/academy';

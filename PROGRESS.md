@@ -21,12 +21,12 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 | 2 — Coaches/staff/growth | ✅ done | Gate proven: matched elite coaching >1.5× development; budget-constrained small clubs. |
 | 3 — Injuries/loans/contracts | ✅ done | Gate proven: believable injury volume (exposure model, Fuller tiers, physio effects), loan clauses + AI loans, contract lifecycle + free agency. |
 | 4 — Tier-A 2D match engine | ✅ core done | `match/tierA.ts`: pre-generated deterministic event timeline (pass/carry/shot/goal/save/cards, x/y, xG, XI actors), parity with Tier B BY CONSTRUCTION (same `expectedGoalRates`; shot rate = λ/(90·meanXG·CQM)) + standing statistical parity test (±0.14 over 800 sims × 3 configs). `match/commentary.ts` deterministic templates. User fixture resolved by Tier A inside `playMatchday(world, onUserMatch?)`. App `MatchScreen`: RN-View pitch playback, score/clock, commentary ticker, live stats, pause/speed/skip. Remaining for gate: Skia renderer + 60fps check on device (D8); zone-based possession model is cosmetic-first (chance timing calibrated, not spatially emergent). |
-| 5 — Youth/regens | ▶ next | Also fixes long-career squad shrinkage (releases > intakes today). |
-| 6 — Deep finance/FFP | not started | |
+| 5 — Youth/regens | ✅ done | Gate proven: 5-season endurance test (squads stay [18-34], active population ≥85%, plausible prospects keep arriving). `engine/youth/academy.ts` owns retirements (retired flag, GK grace year), append-only intake application, squad pruning; `data/generate/youth.ts` provides the intake generator (facilities 50% + youth coach 30% + reputation 20%); youth coach boosts U18 growth; hub shows the intake news card. Tutoring/promotion UI deferred (academy merges into senior squad as prospects). |
+| 6 — Deep finance/FFP | ▶ next | |
 
 ## Verification state
 
-- `pnpm -r test` → 158 tests green (shared 25, engine 82, data 38, mobile 13).
+- `pnpm -r test` → 164 tests green (shared 25, engine 86, data 40, mobile 13).
 - `pnpm -r typecheck` → 4/4 clean.
 - CI (`.github/workflows/ci.yml`): determinism matrix (ubuntu/windows/macos,
   golden battery must match `packages/engine/test/golden.json` byte-for-byte),
@@ -74,16 +74,19 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 
 ## Next session should
 
-1. Phase 5 (PLAN §15): youth academy + yearly regen intakes at rollover
-   (name banks + generator already support it — `generateSquad` internals are
-   reusable; intake quality scales with youth_facilities + youth coach +
-   club/nation reputation). This also fixes the slow squad-shrink from
-   contract releases outnumbering intakes.
-2. Then Phase 6 (deep finance/FFP) or the device milestone (firewall rule →
-   Expo Go → save/Continue verification, threading spike, Skia + 60fps gate).
+1. Phase 6 (PLAN §15): full revenue/expense books (gate/TV/sponsor/prize
+   through finance_ledger semantics), FFP-style constraint, installments/
+   agents/sell-on clauses, manager job market, global balancing pass.
+2. Or the device milestone (firewall rule → Expo Go → save/Continue
+   verification, threading spike D2, Skia renderer + 60fps gate D8).
 
 ## Session log
 
+- **2026-07-05 (later still)**: Phase 5: academy/retirements/intakes/pruning +
+  youth generator + intake card; 5-season endurance gate green. Endurance
+  test exposed a latent Phase-3 bug (trainingInjuryPass crashed on free
+  agents after a rollover — clubOf(0)); fixed with clubId-0/retired guards.
+  164 tests.
 - **2026-07-05 (later)**: Phase 4 core: Tier-A engine + commentary + parity
   gate + MatchScreen playback; PROGRESS.md/CLAUDE.md introduced (`677ef76`).
   158 tests. Note: `playMatchday` gained an `onUserMatch` callback; watching

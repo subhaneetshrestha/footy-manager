@@ -61,6 +61,8 @@ export interface WorldPlayer {
   fitness: number;
   morale: number;
   injury: ActiveInjury | null;
+  /** Set at rollover when the player hangs up their boots; never re-signable. */
+  retired?: boolean;
   ratings: PlayerRatings;
 }
 

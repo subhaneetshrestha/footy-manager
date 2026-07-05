@@ -35,6 +35,7 @@ function squadRank(world: WorldState, player: WorldPlayer): number {
 
 /** Can this player be prised away (seller-side willingness only)? */
 export function isListable(world: WorldState, player: WorldPlayer): boolean {
+  if (player.retired === true) return false;
   if (player.clubId === 0) return true; // free agent
   if (world.loans.some((l) => l.playerId === player.id)) return false; // on loan
   const club = clubOf(world, player.clubId);
@@ -142,7 +143,7 @@ export function runAiTransferWindowTick(world: WorldState, matchday: number): Tr
     // Thin squads refill from free agency first (keeps the world populated).
     if (club.playerIds.length < 26) {
       const freeAgents = world.players
-        .filter((p) => p.clubId === 0 && p.value <= club.budgetTransfer)
+        .filter((p) => p.clubId === 0 && p.retired !== true && p.value <= club.budgetTransfer)
         .sort((a, b) => b.ovr - a.ovr || a.id - b.id);
       const signing = freeAgents[0];
       if (signing !== undefined) {

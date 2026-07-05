@@ -101,6 +101,7 @@ export function rollInjury(
   rng: Rng,
 ): boolean {
   if (player.injury !== null) return false;
+  if (player.clubId === 0) return false; // free agents don't train with a club
   const club = clubOf(world, player.clubId);
   const physio = physioRating(world, club);
   const probability = baseProb * pronenessFactor(player) * incidenceModifier(physio);
@@ -174,6 +175,7 @@ export function trainingInjuryPass(
   rng: Rng,
 ): void {
   for (const player of world.players) {
+    if (player.clubId === 0 || player.retired === true) continue;
     if (playedPlayerIds.has(player.id)) continue;
     rollInjury(world, player, matchday, TRAINING_INJURY_PROB, rng);
   }

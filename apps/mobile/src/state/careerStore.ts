@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { buildWorldForLeague } from '@footy/data';
+import { buildWorldForLeague, makeYouthIntakeGenerator } from '@footy/data';
 import {
   STANDARD_LOAN_TERMS,
   autoFillStaff,
@@ -27,6 +27,7 @@ import {
   type DetailedMatch,
   type Fixture,
   type FormationKey,
+  type WorldPlayer,
   type WorldState,
 } from '@footy/engine';
 import type { PlayStyle } from '@footy/shared';
@@ -40,6 +41,8 @@ interface CareerState {
   lastUserFixture: Fixture | null;
   /** Pre-generated Tier-A timeline of the just-played user match (§6). */
   liveMatch: DetailedMatch | null;
+  /** This season's academy intake at the user's club (news card). */
+  lastIntake: WorldPlayer[] | null;
   verdict: BoardVerdict | null;
   error: string | null;
 
@@ -75,6 +78,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
   advancing: false,
   lastUserFixture: null,
   liveMatch: null,
+  lastIntake: null,
   verdict: null,
   error: null,
 
@@ -102,6 +106,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
       world: refresh(world),
       lastUserFixture: userFixtureOf(played, world.userClubId),
       liveMatch: detail,
+      lastIntake: null, // season under way — intake news expires
       verdict: isSeasonOver(world) ? endOfSeasonVerdict(world, world.userClubId) : null,
       error: null,
     });
@@ -216,8 +221,14 @@ export const useCareerStore = create<CareerState>((set, get) => ({
   startNextSeason() {
     const { world } = get();
     if (!world) return;
-    rolloverSeason(world);
-    set({ world: refresh(world), verdict: null, lastUserFixture: null, error: null });
+    const summary = rolloverSeason(world, { youthIntake: makeYouthIntakeGenerator() });
+    set({
+      world: refresh(world),
+      verdict: null,
+      lastUserFixture: null,
+      lastIntake: summary.userIntake,
+      error: null,
+    });
   },
 
   dismissMatch() {
@@ -231,6 +242,7 @@ export const useCareerStore = create<CareerState>((set, get) => ({
       advancing: false,
       lastUserFixture: null,
       liveMatch: null,
+      lastIntake: null,
       verdict: null,
       error: null,
     });

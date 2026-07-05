@@ -55,6 +55,13 @@ function deptRatingFor(world: WorldState, club: WorldClub, group: PositionGroup)
   return 0;
 }
 
+/** Academy players train under the youth coach when that's the better option. */
+function youthCoachRating(world: WorldState, club: WorldClub): number {
+  const coach = staffOf(world, club.id).find((s) => s.role === 'youth');
+  if (coach === undefined) return 0;
+  return (coach.ratingGk + coach.ratingDef + coach.ratingMid + coach.ratingAtt) / 4;
+}
+
 function managerStyleRating(world: WorldState, club: WorldClub): number {
   const manager = staffOf(world, club.id).find((s) => s.role === 'manager');
   return manager?.playstyleRatings[club.tactics.playStyle] ?? 0;
@@ -118,8 +125,11 @@ export function growthFactorsFor(
   player: WorldPlayer,
   inXi: boolean,
 ): GrowthFactors {
+  const deptRating = deptRatingFor(world, club, POSITION_GROUPS[player.position]);
+  const coachRating =
+    player.age <= 18 ? Math.max(deptRating, youthCoachRating(world, club)) : deptRating;
   return {
-    coach: 0.6 + 0.05 * deptRatingFor(world, club, POSITION_GROUPS[player.position]),
+    coach: 0.6 + 0.05 * coachRating,
     style: 0.85 + 0.03 * managerStyleRating(world, club),
     facilities: 0.8 + 0.02 * clamp(club.trainingFacilities, 1, 20),
     minutes: inXi ? 1.05 : 0.95,

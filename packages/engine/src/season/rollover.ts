@@ -6,18 +6,34 @@
  * in Phase 5; promotion/relegation with multi-league careers.
  */
 
-import { clamp } from '@footy/shared';
+import { clamp, createRng, deriveSeed } from '@footy/shared';
 import { playerValue } from '../finance/valuation';
 import { generateLeagueFixtures } from './calendar';
 import { processContractsAtRollover } from '../transfers/contracts';
 import { processLoansAtRollover } from '../transfers/loans';
+import {
+  applyRetirements,
+  applyYouthIntake,
+  pruneOversizedSquads,
+  type RolloverSummary,
+  type YouthIntakeGenerator,
+} from '../youth/academy';
 import { clubOf, type WorldState } from '../world/types';
 
-export function rolloverSeason(world: WorldState): void {
+export interface RolloverOptions {
+  /** Academy intake generator (§15 Phase 5); no intakes when omitted. */
+  youthIntake?: YouthIntakeGenerator;
+}
+
+export function rolloverSeason(
+  world: WorldState,
+  options: RolloverOptions = {},
+): RolloverSummary {
   processLoansAtRollover(world); // returns/options first — parents get players back
   processContractsAtRollover(world); // then contracts tick, renew or release
 
   for (const player of world.players) {
+    if (player.retired === true) continue;
     player.age++;
     const clubRep = player.clubId === 0 ? 30 : clubOf(world, player.clubId).reputation;
     player.value = playerValue({
@@ -36,6 +52,15 @@ export function rolloverSeason(world: WorldState): void {
     }
   }
 
+  // Academy cycle (§15 Phase 5): veterans out, prospects in, squads trimmed.
+  const academyRng = createRng(deriveSeed(world.seed, world.season, 0x2e71));
+  const retiredCount = applyRetirements(world, academyRng);
+  const intake =
+    options.youthIntake !== undefined
+      ? applyYouthIntake(world, options.youthIntake, academyRng)
+      : { intakeCount: 0, userIntake: [] };
+  const releasedCount = pruneOversizedSquads(world);
+
   world.fixtures = [];
   for (const league of world.leagues) {
     world.fixtures.push(
@@ -45,4 +70,11 @@ export function rolloverSeason(world: WorldState): void {
 
   world.season++;
   world.currentMatchday = 1;
+
+  return {
+    retiredCount,
+    releasedCount,
+    intakeCount: intake.intakeCount,
+    userIntake: intake.userIntake,
+  };
 }

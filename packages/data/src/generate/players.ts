@@ -169,7 +169,7 @@ function relFactor(position: Position, attr: Attribute): number {
   return OFF_FORMULA_LEVEL[POSITION_GROUPS[position]]?.[group] ?? 0.6;
 }
 
-function generateRatings(position: Position, targetOvr: number, rng: Rng): PlayerRatings {
+export function generateRatings(position: Position, targetOvr: number, rng: Rng): PlayerRatings {
   const ratings = {} as PlayerRatings;
   const isGk = position === 'GK';
 

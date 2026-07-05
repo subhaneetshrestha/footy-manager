@@ -36,7 +36,8 @@ export function CareerScreen() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigate = useAppStore((s) => s.navigate);
-  const { world, building, advancing, lastUserFixture, verdict, error } = useCareerStore();
+  const { world, building, advancing, lastUserFixture, lastIntake, verdict, error } =
+    useCareerStore();
   const playNext = useCareerStore((s) => s.playNext);
   const simToSeasonEnd = useCareerStore((s) => s.simToSeasonEnd);
   const startNextSeason = useCareerStore((s) => s.startNextSeason);
@@ -115,6 +116,18 @@ export function CareerScreen() {
           </View>
         );
       })()}
+
+      {lastIntake !== null && lastIntake.length > 0 && (
+        <View style={[styles.card, styles.cardGood]}>
+          <Text style={styles.cardLabel}>Academy intake ({lastIntake.length})</Text>
+          {lastIntake.map((p) => (
+            <Text key={p.id} style={styles.cardMuted}>
+              {p.position} {p.name}, {p.age} — potential:{' '}
+              {p.potential >= 88 ? 'Elite' : p.potential >= 78 ? 'High' : p.potential >= 68 ? 'Good' : 'Decent'}
+            </Text>
+          ))}
+        </View>
+      )}
 
       {verdict !== null && (
         <View style={[styles.card, verdict.verdict === 'sacked' ? styles.cardBad : styles.cardGood]}>

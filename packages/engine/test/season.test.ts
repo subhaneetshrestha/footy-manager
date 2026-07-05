@@ -348,7 +348,7 @@ describe('season rollover (§9 MVP)', () => {
     world.players.forEach((player, i) => {
       expect(player.age).toBe(agesBefore[i]! + 1);
       expect(player.potential).toBeGreaterThanOrEqual(player.ovr);
-      expect(player.value).toBeGreaterThan(0);
+      if (player.retired !== true) expect(player.value).toBeGreaterThan(0);
     });
     expect(world.season).toBe(2027);
     expect(world.currentMatchday).toBe(1);
