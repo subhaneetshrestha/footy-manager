@@ -4,6 +4,7 @@
  * migration above its current version, in order, inside one transaction.
  */
 
+import { SCHEMA_V2_SQL } from '@footy/data';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 export interface Migration {
@@ -12,8 +13,8 @@ export interface Migration {
   sql: string;
 }
 
-/** seed.db ships at schema v1; future migrations append here. */
-export const MIGRATIONS: Migration[] = [];
+/** seed.db ships at schema v1; migrations append here (shared with tests). */
+export const MIGRATIONS: Migration[] = [{ toVersion: 2, sql: SCHEMA_V2_SQL }];
 
 export async function currentSchemaVersion(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ value: string }>(

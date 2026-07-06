@@ -26,7 +26,7 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 
 ## Verification state
 
-- `pnpm -r test` → 170 tests green (shared 25, engine 91, data 41, mobile 13).
+- `pnpm -r test` → 173 tests green (shared 25, engine 91, data 44, mobile 13).
 - `pnpm -r typecheck` → 4/4 clean.
 - CI (`.github/workflows/ci.yml`): determinism matrix (ubuntu/windows/macos,
   golden battery must match `packages/engine/test/golden.json` byte-for-byte),
@@ -76,17 +76,25 @@ Remote: github.com/subhaneetshrestha/footy-manager (CI green at `4db7831`).
 
 All 7 roadmap phases have their core delivered. Remaining work, in rough
 priority order:
-1. **Device milestone**: firewall rule → Expo Go → verify save/Continue on
-   real SQLite (Phase-1 gate item), threading spike (D2), Skia renderer +
-   60fps gate (D8). This is the biggest unlock.
-2. Save-system integration: persist WorldState progress into save_<n>.db via
-   the DAL (schema exists; currently web preview is in-memory only).
-3. Background leagues + global transfer market (lift D6), domestic cups.
-4. Calibration pass (D3), real-data pack importer + TheSportsDB opt-in (D9),
+1. **Device milestone**: firewall rule → Expo Go → wire careerStore
+   save/load to the DAL using `worldToStatements`/`SAVE_TABLE_QUERIES`/
+   `worldFromTables` from @footy/data (round-trip proven in Node; schema v2
+   migration registered in mobile MIGRATIONS) → verify save/Continue on a
+   real device, threading spike (D2), Skia renderer + 60fps gate (D8).
+2. Background leagues + global transfer market (lift D6), domestic cups.
+3. Calibration pass (D3), real-data pack importer + TheSportsDB opt-in (D9),
    global balancing/fun pass across a 10+ season career.
 
 ## Session log
 
+- **2026-07-06**: Save persistence: schema v2 migration (world_state kv,
+  tactics/economy/age columns, deferred_payments, sell_on_clauses,
+  squad-order JSON), driver-agnostic WorldState↔rows serializer in
+  `data/src/save/`, registered in mobile MIGRATIONS. Gate: better-sqlite3
+  round-trip — save(load(x))===save(x) and continuing a loaded save is
+  byte-identical through a full season + rollover. Footgun found: tables
+  keyed by player_id reorder on load → serializer emits canonical order.
+  173 tests.
 - **2026-07-05 (evening)**: Phase 6 core: season books/FFP/budget derivation,
   installments/agent fees/sell-ons, manager job market (sacked → offers →
   career continues), FinancesScreen. 10-season stability gate green; it
